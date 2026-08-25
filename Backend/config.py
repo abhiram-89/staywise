@@ -32,5 +32,10 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "").strip()
 RESEND_FROM = os.getenv("RESEND_FROM", "Staywise <onboarding@resend.dev>").strip()
 
+MAILJET_API_KEY = os.getenv("MAILJET_API_KEY", "").strip()
+MAILJET_SECRET_KEY = os.getenv("MAILJET_SECRET_KEY", "").strip()
+MAIL_FROM_EMAIL = os.getenv("MAIL_FROM_EMAIL", "").strip()
+MAIL_FROM_NAME = os.getenv("MAIL_FROM_NAME", "Staywise").strip()
+
 OTP_TTL_SECONDS = 300
 OTP_RESEND_SECONDS = 45

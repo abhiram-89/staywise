@@ -1,7 +1,8 @@
-"""Deliver OTP mail through Resend, with SMTP as a fallback."""
+"""Deliver OTP mail through Mailjet, with legacy providers as fallbacks."""
 
 from __future__ import annotations
 
+import base64
 import json
 import smtplib
 import ssl
@@ -12,6 +13,10 @@ from email.mime.text import MIMEText
 from email.utils import formataddr, formatdate, make_msgid
 
 from config import (
+    MAILJET_API_KEY,
+    MAILJET_SECRET_KEY,
+    MAIL_FROM_EMAIL,
+    MAIL_FROM_NAME,
     RESEND_API_KEY,
     RESEND_FROM,
     SMTP_FROM,
@@ -39,8 +44,12 @@ def resend_configured() -> bool:
     return bool(RESEND_API_KEY)
 
 
+def mailjet_configured() -> bool:
+    return bool(MAILJET_API_KEY and MAILJET_SECRET_KEY and MAIL_FROM_EMAIL)
+
+
 def email_configured() -> bool:
-    return resend_configured() or smtp_configured()
+    return mailjet_configured() or resend_configured() or smtp_configured()
 
 
 def _host() -> str:
@@ -103,6 +112,39 @@ def _send_via_resend(to_email: str, otp: str) -> bool:
         raise RuntimeError(f"Resend could not send the email: {detail or exc}") from exc
 
 
+def _send_via_mailjet(to_email: str, otp: str) -> bool:
+    payload = json.dumps({
+        "Messages": [{
+            "From": {"Email": MAIL_FROM_EMAIL, "Name": MAIL_FROM_NAME},
+            "To": [{"Email": to_email}],
+            "Subject": "Your staywise verification code",
+            "TextPart": f"Your verification code is {otp}. It expires in 5 minutes.",
+            "HTMLPart": _otp_html(otp),
+        }],
+    }).encode()
+    request = urllib.request.Request(
+        "https://api.mailjet.com/v3.1/send",
+        data=payload,
+        method="POST",
+        headers={
+            "Authorization": "Basic " + base64.b64encode(
+                f"{MAILJET_API_KEY}:{MAILJET_SECRET_KEY}".encode()
+            ).decode(),
+            "Content-Type": "application/json",
+            "User-Agent": "staywise-hotel-budget/1.0",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            if 200 <= response.status < 300:
+                print(f"[OTP] Sent verification code to {to_email} via Mailjet")
+                return True
+            raise RuntimeError(f"Mailjet returned HTTP {response.status}")
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="ignore")
+        raise RuntimeError(f"Mailjet could not send the email: {detail or exc}") from exc
+
+
 def _send_via_smtp(to_email: str, otp: str) -> bool:
     message = MIMEMultipart("alternative")
     message["Subject"] = "Your staywise verification code"
@@ -133,6 +175,8 @@ def _send_via_smtp(to_email: str, otp: str) -> bool:
 
 def send_otp_email(to_email: str, otp: str) -> bool:
     """Deliver a 6-digit OTP. Returns True on success, False if no mail provider is configured."""
+    if mailjet_configured():
+        return _send_via_mailjet(to_email, otp)
     if resend_configured():
         return _send_via_resend(to_email, otp)
     if smtp_configured():
@@ -140,7 +184,7 @@ def send_otp_email(to_email: str, otp: str) -> bool:
             return _send_via_smtp(to_email, otp)
         except smtplib.SMTPAuthenticationError as exc:
             raise RuntimeError(
-                "SMTP login failed. For Gmail, use a 16-character App Password, or set RESEND_API_KEY."
+                "SMTP login failed. For Gmail, use a 16-character App Password, or configure Mailjet."
             ) from exc
         except OSError as exc:
             raise RuntimeError(f"Could not reach SMTP host {_host()}:{SMTP_PORT}.") from exc

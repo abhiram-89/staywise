@@ -14,7 +14,7 @@ from pydantic import BaseModel, EmailStr, Field
 from auth_utils import create_access_token, decode_token, generate_otp, hash_password, otp_matches, verify_password
 from config import DEBUG_RETURN_OTP, FRONTEND_ORIGIN, HOTEL_ID, OTP_RESEND_SECONDS, OTP_TTL_SECONDS
 from db import DatabaseUnavailable, close_db, get_db
-from email_service import email_configured, resend_configured, send_otp_email, smtp_configured
+from email_service import email_configured, mailjet_configured, resend_configured, send_otp_email, smtp_configured
 from forecast_engine import generate_forecast, latest_forecast
 from ingest import ensure_skeleton, normalize_rows, replace_hotel_history
 import chat as assistant
@@ -200,7 +200,7 @@ def _pct(new: float, old: float) -> float:
 def health():
     try:
         get_db().verify()
-        provider = "resend" if resend_configured() else "smtp" if smtp_configured() else "none"
+        provider = "mailjet" if mailjet_configured() else "resend" if resend_configured() else "smtp" if smtp_configured() else "none"
         return {"status": "ok", "database": "connected", "email": provider, "smtp": smtp_configured()}
     except DatabaseUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
