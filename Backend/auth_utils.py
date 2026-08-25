@@ -1,5 +1,3 @@
-import hmac
-import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
@@ -33,15 +31,3 @@ def decode_token(token: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def generate_otp() -> str:
-    return f"{secrets.randbelow(1_000_000):06d}"
-
-
-def otp_matches(stored: str, provided: str) -> bool:
-    stored = str(stored or "")
-    provided = str(provided or "").strip()
-    if not stored or not provided:
-        return False
-    if stored.startswith("$2"):
-        return verify_password(provided, stored)
-    return hmac.compare_digest(stored, provided)

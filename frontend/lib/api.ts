@@ -49,21 +49,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const signup = (email: string, password: string, name: string) =>
-  request<{ email: string; name?: string; message?: string; email_sent?: boolean; dev_otp?: string; resend_after?: number }>('/api/auth/register', {
+  request<{ email: string; name?: string; message?: string }>('/api/auth/register', {
     method: 'POST',
     body: JSON.stringify({ email, password, name }),
-  })
-
-export const verifyOtp = (email: string, otp: string) =>
-  request<{ status: string; message?: string }>('/api/auth/verify-email', {
-    method: 'POST',
-    body: JSON.stringify({ email, otp }),
-  })
-
-export const resendOtp = (email: string) =>
-  request<{ email_sent?: boolean; dev_otp?: string; resend_after?: number }>('/api/auth/resend-otp', {
-    method: 'POST',
-    body: JSON.stringify({ email }),
   })
 
 export const login = (email: string, password: string) =>

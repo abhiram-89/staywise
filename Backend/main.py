@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import secrets
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
@@ -11,10 +11,9 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
 
-from auth_utils import create_access_token, decode_token, generate_otp, hash_password, otp_matches, verify_password
-from config import DEBUG_RETURN_OTP, FRONTEND_ORIGIN, HOTEL_ID, OTP_RESEND_SECONDS, OTP_TTL_SECONDS
+from auth_utils import create_access_token, decode_token, hash_password, verify_password
+from config import FRONTEND_ORIGIN, HOTEL_ID
 from db import DatabaseUnavailable, close_db, get_db
-from email_service import email_configured, mailjet_configured, resend_configured, send_otp_email, smtp_configured
 from forecast_engine import generate_forecast, latest_forecast
 from ingest import ensure_skeleton, normalize_rows, replace_hotel_history
 import chat as assistant
@@ -25,15 +24,6 @@ class SignupRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=72)
     name: str = Field(default="", max_length=80)
-
-
-class OtpRequest(BaseModel):
-    email: EmailStr
-    otp: str = Field(min_length=6, max_length=6)
-
-
-class EmailRequest(BaseModel):
-    email: EmailStr
 
 
 class LoginRequest(BaseModel):
@@ -165,27 +155,6 @@ def resolve_hotel_id(
     return hotels[0]["id"]
 
 
-def _issue_otp(db, email: str, purpose: str = "signup") -> tuple[str, bool]:
-    code = generate_otp()
-    expires = (_now() + timedelta(seconds=OTP_TTL_SECONDS)).timestamp()
-    db.run_write(
-        Q.REPLACE_OTP,
-        email=email.lower(),
-        code=hash_password(code),
-        expires_at=expires,
-        purpose=purpose,
-        created_at=_now().isoformat(),
-    )
-    try:
-        delivered = send_otp_email(email, code)
-    except Exception as exc:
-        print(f"[OTP] Failed to send email to {email}: {exc}")
-        if email_configured():
-            raise HTTPException(status_code=502, detail=str(exc)) from exc
-        delivered = False
-    return code, delivered
-
-
 def _pct(new: float, old: float) -> float:
     if not old:
         return 0.0
@@ -200,8 +169,7 @@ def _pct(new: float, old: float) -> float:
 def health():
     try:
         get_db().verify()
-        provider = "mailjet" if mailjet_configured() else "resend" if resend_configured() else "smtp" if smtp_configured() else "none"
-        return {"status": "ok", "database": "connected", "email": provider, "smtp": smtp_configured()}
+        return {"status": "ok", "database": "connected"}
     except DatabaseUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -232,62 +200,7 @@ def signup(body: SignupRequest):
                 name=name,
                 created_at=_now().isoformat(),
             )
-        code, delivered = _issue_otp(db, email, "signup")
-        payload: dict[str, Any] = {
-            "status": "otp_sent",
-            "email": email,
-            "name": name,
-            "email_sent": delivered,
-            "message": "We sent a 6-digit OTP to your email." if delivered else "We generated a 6-digit OTP.",
-            "resend_after": OTP_RESEND_SECONDS,
-        }
-        if DEBUG_RETURN_OTP and not delivered:
-            payload["dev_otp"] = code
-        return payload
-    except DatabaseUnavailable as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-
-
-@app.post("/api/auth/verify-otp")
-@app.post("/api/auth/verify-email")
-@app.post("/auth/verify-email")
-def verify_otp(body: OtpRequest):
-    db = db_or_503()
-    email = body.email.lower()
-    try:
-        rows = db.run(Q.GET_OTP, email=email, purpose="signup")
-        if not rows:
-            raise HTTPException(status_code=400, detail="No OTP found. Please request a new code.")
-        row = rows[0]
-        if float(row["expires_at"]) < _now().timestamp():
-            raise HTTPException(status_code=400, detail="This OTP has expired. Please request a new code.")
-        if not otp_matches(str(row["code"]), body.otp):
-            raise HTTPException(status_code=400, detail="The OTP you entered is incorrect.")
-        db.run_write(Q.SET_USER_VERIFIED, email=email)
-        return {"status": "verified", "message": "Email verified. You can sign in now."}
-    except DatabaseUnavailable as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-
-
-@app.post("/api/auth/resend-otp")
-def resend_otp(body: EmailRequest):
-    db = db_or_503()
-    email = body.email.lower()
-    try:
-        users = db.run(Q.GET_USER, email=email)
-        if not users:
-            raise HTTPException(status_code=404, detail="No account found for this email.")
-        if users[0]["verified"]:
-            raise HTTPException(status_code=400, detail="This account is already verified. Please sign in.")
-        code, delivered = _issue_otp(db, email, "signup")
-        payload: dict[str, Any] = {
-            "status": "otp_sent",
-            "email_sent": delivered,
-            "resend_after": OTP_RESEND_SECONDS,
-        }
-        if DEBUG_RETURN_OTP and not delivered:
-            payload["dev_otp"] = code
-        return payload
+        return {"status": "created", "email": email, "name": name, "message": "Account created. You can sign in now."}
     except DatabaseUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -304,8 +217,6 @@ def login(body: LoginRequest):
         user = users[0]
         if not verify_password(body.password, user["password_hash"]):
             raise HTTPException(status_code=401, detail="Incorrect email or password.")
-        if not user["verified"]:
-            raise HTTPException(status_code=403, detail="Please verify the OTP sent to your email before signing in.")
         token = create_access_token(user["email"], user["name"] or "Admin")
         return {"access_token": token, "token_type": "bearer", "name": user["name"], "email": user["email"]}
     except DatabaseUnavailable as exc:

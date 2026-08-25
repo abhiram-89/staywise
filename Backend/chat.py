@@ -55,8 +55,8 @@ def answer(db, user: dict[str, Any], message: str, hotel_id: str = HOTEL_ID) -> 
             )
         if "forecast" in lowered:
             return "A forecast needs imported history. Upload a report, then open Forecasts and click Run forecast."
-        if "verify" in lowered or "otp" in lowered or "email" in lowered:
-            return "After sign-up we email a 6-digit code. Enter it on Verify email, then sign in. Unverified accounts cannot sign in."
+        if "sign up" in lowered or "signup" in lowered or "register" in lowered:
+            return "Create an account with your username, email, and password, then sign in with your email and password."
         return (
             f"Hi {name}. I am MIRA — I can help with import, forecasts, rooms, and this workspace. "
             "There is no imported history yet — start with Import report."
@@ -87,9 +87,6 @@ def answer(db, user: dict[str, Any], message: str, hotel_id: str = HOTEL_ID) -> 
         return f"Imported revenue for the latest window is about {revenue:,.0f}. Latest month {last.get('label')} recorded {float(last.get('revenue') or 0):,.0f}."
     if "graph" in lowered:
         return "Graph explorer shows the hotel node linked to city, imported months, departments, room types, and any forecast run. Click a node for details."
-    if "verify" in lowered or "otp" in lowered:
-        return "Sign-up stores your user in the graph, emails a hashed 6-digit code, and login is blocked until that code is verified."
-
     context = (
         f"You are a concise assistant for staywise hotel budget forecasting. "
         f"User: {name}. Hotel: {hotel.get('name')}. Imported months: {len(months)}. "

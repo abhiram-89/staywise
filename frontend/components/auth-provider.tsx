@@ -16,7 +16,7 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-const GUEST_PATHS = ['/login', '/signup', '/verify-otp']
+const GUEST_PATHS = ['/login', '/signup']
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()

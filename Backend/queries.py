@@ -11,8 +11,8 @@ CREATE_USER = """
 CREATE (u:User {
   email: $email,
   password_hash: $password_hash,
-  verified: false,
-  is_verified: false,
+  verified: true,
+  is_verified: true,
   name: $name,
   created_at: $created_at
 })
@@ -22,38 +22,13 @@ RETURN u.email AS email, u.verified AS verified, u.name AS name
 UPDATE_UNVERIFIED_USER = """
 MATCH (u:User {email: $email})
 WHERE u.verified = false
-SET u.password_hash = $password_hash, u.name = $name
+SET u.password_hash = $password_hash, u.name = $name, u.verified = true, u.is_verified = true
 RETURN u.email AS email, u.verified AS verified, u.name AS name
 """
 
 GET_USER = """
 MATCH (u:User {email: $email})
 RETURN u.email AS email, u.verified AS verified, u.password_hash AS password_hash, u.name AS name
-"""
-
-SET_USER_VERIFIED = """
-MATCH (u:User {email: $email})
-SET u.verified = true, u.is_verified = true
-WITH u
-OPTIONAL MATCH (u)-[:HAS_OTP]->(o:Otp)
-DETACH DELETE o
-WITH u
-RETURN u.email AS email, u.verified AS verified, u.name AS name
-"""
-
-REPLACE_OTP = """
-MATCH (u:User {email: $email})
-OPTIONAL MATCH (u)-[:HAS_OTP]->(old:Otp)
-DETACH DELETE old
-WITH u
-CREATE (o:Otp {code: $code, expires_at: $expires_at, purpose: $purpose, created_at: $created_at})
-CREATE (u)-[:HAS_OTP]->(o)
-RETURN o.code AS code, o.expires_at AS expires_at
-"""
-
-GET_OTP = """
-MATCH (u:User {email: $email})-[:HAS_OTP]->(o:Otp {purpose: $purpose})
-RETURN o.code AS code, o.expires_at AS expires_at
 """
 
 # ---------------------------------------------------------------------------

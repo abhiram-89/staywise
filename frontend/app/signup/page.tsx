@@ -22,10 +22,7 @@ export default function SignupPage() {
     setLoading(true)
     try {
       const data = await signup(email.trim(), password, name.trim())
-      sessionStorage.setItem('hbf_pending_email', data.email)
-      if (data.dev_otp) sessionStorage.setItem('hbf_dev_otp', data.dev_otp)
-      else sessionStorage.removeItem('hbf_dev_otp')
-      router.push('/verify-otp')
+      router.push('/login')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not create the account.')
     } finally {
@@ -37,7 +34,7 @@ export default function SignupPage() {
     <AuthScreen title="Create your account" subtitle="Sign up to import reports and run hotel budget forecasts.">
       <form onSubmit={submit} className="auth-form">
         {error && <p className="form-error">{error}</p>}
-        <label className="control-label">Full name
+        <label className="control-label">Username
           <input type="text" required minLength={2} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
         </label>
         <label className="control-label">Email
@@ -52,7 +49,7 @@ export default function SignupPage() {
           </span>
         </label>
         <p className="field-hint">At least 8 characters.</p>
-        <button className="button-primary auth-submit" disabled={loading}>{loading ? 'Sending OTP…' : 'Send OTP'}</button>
+        <button className="button-primary auth-submit" disabled={loading}>{loading ? 'Creating account…' : 'Create account'}</button>
         <p className="auth-switch">Already have an account? <Link href="/login">Sign in</Link></p>
       </form>
     </AuthScreen>

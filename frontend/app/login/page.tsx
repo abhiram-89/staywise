@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff } from 'lucide-react'
@@ -16,10 +16,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    setEmail(sessionStorage.getItem('hbf_verified_email') || '')
-  }, [])
-
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     setError('')
@@ -27,7 +23,6 @@ export default function LoginPage() {
     try {
       await signIn(email.trim(), password)
       sessionStorage.removeItem('hbf_pending_email')
-      sessionStorage.removeItem('hbf_verified_email')
       router.replace('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not sign in.')

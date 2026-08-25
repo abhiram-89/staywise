@@ -79,8 +79,6 @@ nextjs-portal { display:none !important; }
 .field-hint { color:var(--muted-foreground); font-size:11px; margin-top:8px; }
 .password-field { display:flex; align-items:center; border:1px solid var(--border); border-radius:7px; background:var(--card); }
 .password-field input { border:0; padding:10px; width:100%; outline:none; background:transparent; }
-.otp-row { display:flex; gap:8px; justify-content:center; margin-top:22px; }
-.otp-input { width:44px; height:48px; text-align:center; font:18px 'DM Mono', monospace; border:1px solid var(--border); border-radius:8px; }
 .notice-banner, .error-banner { margin-top:18px; border-radius:8px; padding:10px 12px; font-size:12px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .notice-banner { background:#e9f4eb; color:#4d7960; }
 .error-banner { background:#fcedea; color:#b45b48; }

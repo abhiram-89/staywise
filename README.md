@@ -17,8 +17,8 @@ The browser never talks to the database. Flow is always:
 
 ## End-to-end approach
 
-1. A GM or analyst **creates an account**. The API stores the user in the graph and emails a 6-digit OTP (or shows it on screen if email is not configured).
-2. After OTP verify + login, the UI sends a JWT on every request and an `X-Hotel-Id` header for the active **workspace / client**.
+1. A GM or analyst **creates an account** with a username, email, and password. The API stores the user in the graph.
+2. After sign-in with email and password, the UI sends a JWT on every request and an `X-Hotel-Id` header for the active **workspace / client**.
 3. **Import report** uploads Excel / CSV / JSON. The frontend parses the file; the backend normalizes rows (`year`, `month`, revenue) and writes monthly snapshots, department spend, and room mix into CognoDB. That file becomes the live source for every screen.
 4. **Overview** reads KPIs, trend, and expense mix from those snapshots.
 5. **Historical** lists the same months with date and category filters.
@@ -76,16 +76,6 @@ Health check: http://127.0.0.1:8000/api/health
 
 `scripts.seed` loads the demo hotel, months, rooms, and departments. Re-running it rebuilds financial data and leaves user accounts in place.
 
-Optional SMTP (so OTP is emailed):
-
-```
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=you@gmail.com
-SMTP_PASSWORD=<gmail-app-password>
-DEBUG_RETURN_OTP=false
-```
-
 ---
 
 ## 2. Start the frontend
@@ -116,8 +106,8 @@ Open http://localhost:3000
 
 | Step | What to do |
 | --- | --- |
-| Sign up | Name, email, password (8+ characters) → OTP |
-| Verify | Enter the 6-digit code, then sign in |
+| Sign up | Username, email, password (8+ characters) |
+| Sign in | Email and password |
 | Import | **Import report** — columns: year, month (or date), `Room Revenue` |
 | Overview | Revenue, expenses, profit, occupancy, charts |
 | Historical | Filter months and categories |
@@ -137,7 +127,7 @@ Report files: `.xlsx`, `.xls`, `.csv`, or `.json`.
 
 | Path | Role |
 | --- | --- |
-| `frontend/app` | Routes: `/`, `/login`, `/signup`, `/verify-otp` |
+| `frontend/app` | Routes: `/`, `/login`, `/signup` |
 | `frontend/components` | Dashboard, auth, MIRA |
 | `frontend/lib` | API client, report parser, formatting |
 | `Backend/main.py` | HTTP API |
