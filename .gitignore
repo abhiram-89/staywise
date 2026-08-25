@@ -1,0 +1,43 @@
+# staywise
+
+# secrets and local env
+.env
+.env.*
+!.env.example
+!**/.env.example
+fastagent.secrets.yaml
+
+# virtualenvs
+env/
+venv/
+.venv/
+**/env/
+**/venv/
+**/.venv/
+
+# frontend
+node_modules/
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+frontend/tsconfig.tsbuildinfo
+
+# backend artifacts
+Backend/__pycache__/
+Backend/**/__pycache__/
+Backend/.venv/
+Backend/env/
+Backend/venv/
+Backend/uploads/
+Backend/predicted_data/*.xlsx
+Backend/predicted_reports/
+*.pyc
+*.pyo
+*.log
+
+# os / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

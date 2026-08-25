@@ -1,0 +1,12 @@
+# dependencies
+node_modules/
+.next/
+out/
+
+# env
+.env
+.env*.local
+
+# logs / os
+npm-debug.log*
+.DS_Store

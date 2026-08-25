@@ -1,0 +1,11 @@
+default_model: gemini-2.0-flash
+logger:
+  progress_display: true
+  show_chat: true
+  show_tools: true
+  truncate_tools: true
+mcp:
+  servers:
+    forecast:
+      command : "python"
+      args: ["mcps/allmcps.py"]
