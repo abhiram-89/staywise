@@ -147,12 +147,4 @@ Report files: `.xlsx`, `.xls`, `.csv`, or `.json`.
 | `Backend/scripts/seed.py` | Demo graph |
 | `Backend/data/` | Seed CSV |
 
----
 
-## Deploy (free)
-
-1. **API** — [Render](https://render.com) or [Railway](https://railway.app): `uvicorn main:app --host 0.0.0.0 --port $PORT`. Set `COGNODB_*`, `JWT_SECRET`, and `FRONTEND_ORIGIN` as secrets.
-2. **UI** — [Vercel](https://vercel.com) or [Netlify](https://www.netlify.com): root directory `frontend`, env `NEXT_PUBLIC_API_URL` = public API URL.
-3. Point `FRONTEND_ORIGIN` at the UI origin so CORS allows the browser.
-
-Repo: https://github.com/abhiram-89/staywise
